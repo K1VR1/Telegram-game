@@ -1,209 +1,198 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Clicker Game</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            text-align: center;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            color: white;
-        }
-        
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .click-area {
-            width: 300px;
-            height: 300px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            margin: 30px auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.1s;
-            backdrop-filter: blur(10px);
-            border: 5px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .click-area:active {
-            transform: scale(0.95);
-        }
-        
-        .click-counter {
-            font-size: 72px;
-            font-weight: bold;
-        }
-        
-        .stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-        }
-        
-        .stat-box {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 15px;
-            border-radius: 15px;
-            min-width: 120px;
-        }
-        
-        .upgrades {
-            margin-top: 30px;
-        }
-        
-        .upgrade-btn {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            margin: 5px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-        
-        .upgrade-btn:disabled {
-            background: #666;
-            cursor: not-allowed;
-        }
-        
-        .upgrade-btn:hover:not(:disabled) {
-            background: #45a049;
-            transform: translateY(-2px);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K1VR GAME</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: system-ui;
+    background: linear-gradient(45deg,#667eea,#764ba2);
+    color: white;
+    text-align: center;
+}
+
+.container { padding: 20px; }
+
+.hidden { display: none; }
+
+.click-area {
+    width: 260px;
+    height: 260px;
+    margin: 30px auto;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    font-weight: bold;
+    user-select: none;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-around;
+}
+
+.card {
+    background: rgba(255,255,255,0.15);
+    padding: 12px;
+    border-radius: 12px;
+    min-width: 110px;
+}
+
+button {
+    background: #4CAF50;
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 6px;
+    font-size: 16px;
+}
+
+button:disabled { background:#666; }
+
+.nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    background: rgba(0,0,0,0.3);
+}
+
+.nav button {
+    flex: 1;
+    border-radius: 0;
+    background: transparent;
+}
+</style>
 </head>
+
 <body>
-    <div class="container">
-        <h1>💥K1VR GAME</h1>
-        <p>Кликай по кругу чтобы зарабатывать очки!</p>
-        
-        <div class="click-area" onclick="clickCircle()">
-            <div class="click-counter" id="score">0</div>
-        </div>
-        
-        <div class="stats">
-            <div class="stat-box">
-                <div>Кликов в секунду</div>
-                <div id="cps">0</div>
-            </div>
-            <div class="stat-box">
-                <div>За клик</div>
-                <div id="clickPower">1</div>
-            </div>
-        </div>
-        
-        <div class="upgrades">
-            <h3>⚡ Улучшения</h3>
-            <button class="upgrade-btn" onclick="buyUpgrade('click')" id="clickUpgrade">
-                +1 за клик (50 очков)
-            </button>
-            <button class="upgrade-btn" onclick="buyUpgrade('auto')" id="autoUpgrade">
-                Автокликер (100 очков)
-            </button>
-        </div>
+
+<div id="game" class="container">
+    <h2 id="username"></h2>
+
+    <div class="click-area" onclick="clickCircle()">💥</div>
+    <div id="score">0</div>
+
+    <div class="stats">
+        <div class="card">В секунду<br><span id="cps">0</span></div>
+        <div class="card">За клик<br><span id="clickPower">1</span></div>
     </div>
 
-    <script>
-        // Инициализация Telegram
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-        
-        // Игровые переменные
-        let score = 0;
-        let clickPower = 1;
-        let autoClicker = 0;
-        let cps = 0; // кликов в секунду
-        
-        // Загрузка сохранения
-        loadGame();
-        
-        // Функция клика
-        function clickCircle() {
-            score += clickPower;
-            updateUI();
-            saveGame();
-        }
-        
-        // Покупка улучшений
-        function buyUpgrade(type) {
-            if (type === 'click' && score >= 50) {
-                score -= 50;
-                clickPower++;
-                document.getElementById('clickUpgrade').textContent = 
-                    `+1 за клик (${50 * (clickPower - 1) + 50} очков)`;
-            } else if (type === 'auto' && score >= 100) {
-                score -= 100;
-                autoClicker++;
-            }
-            updateUI();
-            saveGame();
-        }
-        
-        // Автокликер
-        setInterval(() => {
-            if (autoClicker > 0) {
-                score += autoClicker;
-                updateUI();
-                saveGame();
-            }
-        }, 1000);
-        
-        // Обновление интерфейса
-        function updateUI() {
-            document.getElementById('score').textContent = Math.floor(score);
-            document.getElementById('clickPower').textContent = clickPower;
-            document.getElementById('cps').textContent = autoClicker;
-            
-            // Обновляем доступность кнопок
-            document.getElementById('clickUpgrade').disabled = score < 50 * (clickPower - 1) + 50;
-            document.getElementById('autoUpgrade').disabled = score < 100;
-        }
-        
-        // Сохранение игры
-        function saveGame() {
-            const gameData = {
-                score: score,
-                clickPower: clickPower,
-                autoClicker: autoClicker
-            };
-            localStorage.setItem('telegramClicker', JSON.stringify(gameData));
-        }
-        
-        // Загрузка игры
-        function loadGame() {
-            const saved = localStorage.getItem('telegramClicker');
-            if (saved) {
-                const gameData = JSON.parse(saved);
-                score = gameData.score || 0;
-                clickPower = gameData.clickPower || 1;
-                autoClicker = gameData.autoClicker || 0;
-            }
-            updateUI();
-        }
-        
-        // Кнопка "Назад" в Telegram
-        tg.BackButton.show();
-        tg.BackButton.onClick(() => {
-            saveGame();
-            tg.close();
-        });
-    </script>
+    <h3>Улучшения</h3>
+    <button onclick="buyClick()">+1 за клик (<span id="clickCost"></span>)</button>
+    <button onclick="buyAuto()">+1 в секунду (<span id="autoCost"></span>)</button>
+</div>
+
+<div id="leaderboard" class="container hidden">
+    <h2>🏆 Лидерборд</h2>
+    <div id="leaders"></div>
+</div>
+
+<div id="shop" class="container hidden">
+    <h2>⭐ Магазин</h2>
+    <button onclick="buyBoost()">x2 кликов (1 час) 15⭐</button>
+    <button onclick="buyAutoPack()">+5 автокликеров 20⭐</button>
+</div>
+
+<div class="nav">
+    <button onclick="showTab('game')">🎮</button>
+    <button onclick="showTab('leaderboard')">🏆</button>
+    <button onclick="showTab('shop')">⭐</button>
+</div>
+
+<script>
+const tg = Telegram.WebApp;
+tg.ready(); tg.expand();
+
+const user = tg.initDataUnsafe.user;
+document.getElementById('username').innerText =
+    user ? `👤 ${user.first_name}` : 'Игрок';
+
+let score = 0;
+let clickPower = 1;
+let auto = 0;
+let boost = false;
+
+function clickCost() { return 50 * clickPower; }
+function autoCost() { return 100 * (auto + 1); }
+
+function clickCircle(){
+    tg.HapticFeedback.impactOccurred("medium");
+    score += clickPower * (boost ? 2 : 1);
+    update();
+}
+
+function buyClick(){
+    if(score >= clickCost()){
+        score -= clickCost();
+        clickPower++;
+        update();
+    }
+}
+
+function buyAuto(){
+    if(score >= autoCost()){
+        score -= autoCost();
+        auto++;
+        update();
+    }
+}
+
+setInterval(()=>{
+    score += auto * (boost ? 2 : 1);
+    update();
+},1000);
+
+function update(){
+    document.getElementById('score').innerText = Math.floor(score);
+    document.getElementById('clickPower').innerText = clickPower;
+    document.getElementById('cps').innerText = auto;
+    document.getElementById('clickCost').innerText = clickCost();
+    document.getElementById('autoCost').innerText = autoCost();
+    save();
+}
+
+function save(){
+    localStorage.setItem('game', JSON.stringify({score,clickPower,auto,boost}));
+}
+
+(function load(){
+    const s = JSON.parse(localStorage.getItem('game'));
+    if(!s) return;
+    score=s.score; clickPower=s.clickPower; auto=s.auto; boost=s.boost;
+    update();
+})();
+
+function showTab(tab){
+    ['game','leaderboard','shop'].forEach(t=>{
+        document.getElementById(t).classList.add('hidden');
+    });
+    document.getElementById(tab).classList.remove('hidden');
+    if(tab==='leaderboard') loadLeaders();
+}
+
+function loadLeaders(){
+    document.getElementById('leaders').innerHTML =
+        `<p>🚧 Подключи сервер для реального рейтинга</p>
+         <p>Ты: ${Math.floor(score)} очков</p>`;
+}
+
+// ⭐ TELEGRAM STARS
+function buyBoost(){
+    tg.openInvoice("BOOST_INVOICE_ID");
+}
+
+function buyAutoPack(){
+    tg.openInvoice("AUTO_INVOICE_ID");
+}
+</script>
 </body>
-
 </html>
-
